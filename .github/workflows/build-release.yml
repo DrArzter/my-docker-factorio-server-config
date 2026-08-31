@@ -1,0 +1,146 @@
+name: Build immutable release
+
+run-name: Build ${{ inputs.profile }} release ${{ inputs.release }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Profile directory below profiles/
+        required: true
+        default: factorio-vanilla
+        type: string
+      release:
+        description: Immutable release version in MAJOR.MINOR form
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: spawnpoint-release-builder
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Ask AWS to build the release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    env:
+      AWS_REGION: eu-central-1
+      PROFILE_ID: ${{ inputs.profile }}
+      RELEASE: ${{ inputs.release }}
+      RELEASE_ROLE_ARN: ${{ vars.AWS_RELEASE_ROLE_ARN }}
+      STATE_MACHINE_ARN: ${{ vars.AWS_BUILD_RELEASE_STATE_MACHINE_ARN }}
+      CONFIG_REPOSITORY_URL: https://github.com/DrArzter/my-docker-factorio-server-config.git
+
+    steps:
+      - name: Check out the exact configuration commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Validate request and profiles
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          [[ "${GITHUB_REF}" == "refs/heads/main" ]] || {
+            printf 'error: AWS trusts only refs/heads/main; selected ref is %s\n' "${GITHUB_REF}" >&2
+            exit 1
+          }
+          [[ "${GITHUB_SHA}" =~ ^[0-9a-f]{40}$ ]] || {
+            printf 'error: checkout did not produce a full lowercase commit SHA\n' >&2
+            exit 1
+          }
+          [[ "${PROFILE_ID}" =~ ^[a-z0-9][a-z0-9-]{0,31}$ ]] || {
+            printf 'error: invalid profile ID: %s\n' "${PROFILE_ID}" >&2
+            exit 1
+          }
+          [[ -f "profiles/${PROFILE_ID}/profile.json" ]] || {
+            printf 'error: profile does not exist at this commit: %s\n' "${PROFILE_ID}" >&2
+            exit 1
+          }
+          [[ "${RELEASE}" =~ ^[0-9]+\.[0-9]+$ ]] || {
+            printf 'error: release must use MAJOR.MINOR: %s\n' "${RELEASE}" >&2
+            exit 1
+          }
+          [[ -n "${STATE_MACHINE_ARN}" ]] || {
+            printf 'error: repository variable AWS_BUILD_RELEASE_STATE_MACHINE_ARN is missing\n' >&2
+            exit 1
+          }
+          [[ -n "${RELEASE_ROLE_ARN}" ]] || {
+            printf 'error: repository variable AWS_RELEASE_ROLE_ARN is missing\n' >&2
+            exit 1
+          }
+
+          scripts/validate-profiles.sh
+
+      - name: Get short-lived AWS credentials through OIDC
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ env.RELEASE_ROLE_ARN }}
+          role-session-name: github-release-${{ github.run_id }}
+
+      - name: Start the AWS release builder and wait
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          request="$({
+            jq -cn \
+              --arg profileId "${PROFILE_ID}" \
+              --arg configCommit "${GITHUB_SHA}" \
+              --arg release "${RELEASE}" \
+              --arg configRepositoryUrl "${CONFIG_REPOSITORY_URL}" \
+              '{profileId: $profileId, configCommit: $configCommit, release: $release, configRepositoryUrl: $configRepositoryUrl}'
+          })"
+          execution_name="github-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          execution_arn="$({
+            aws stepfunctions start-execution \
+              --state-machine-arn "${STATE_MACHINE_ARN}" \
+              --name "${execution_name}" \
+              --input "${request}" \
+              --query executionArn \
+              --output text
+          })"
+
+          printf 'execution=%s\n' "${execution_arn}"
+          # Markdown backticks are intentionally literal.
+          # shellcheck disable=SC2016
+          printf '### AWS release build\n\n- Profile: `%s`\n- Release: `%s`\n- Commit: `%s`\n- Execution: `%s`\n' \
+            "${PROFILE_ID}" "${RELEASE}" "${GITHUB_SHA}" "${execution_arn}" >>"${GITHUB_STEP_SUMMARY}"
+
+          while true; do
+            description="$(aws stepfunctions describe-execution --execution-arn "${execution_arn}" --output json)"
+            status="$(jq -r '.status' <<<"${description}")"
+            printf 'status=%s\n' "${status}"
+
+            case "${status}" in
+              RUNNING)
+                sleep 15
+                ;;
+              SUCCEEDED)
+                output="$(jq -r '.output // "{}"' <<<"${description}")"
+                # Markdown fences are intentionally literal.
+                # shellcheck disable=SC2016
+                printf '\nResult:\n```json\n%s\n```\n' "$(jq . <<<"${output}")" >>"${GITHUB_STEP_SUMMARY}"
+                exit 0
+                ;;
+              FAILED|TIMED_OUT|ABORTED)
+                error="$(jq -r '.error // "unknown"' <<<"${description}")"
+                cause="$(jq -r '.cause // "No cause returned; inspect the Step Functions execution."' <<<"${description}")"
+                printf 'error: AWS execution ended with %s: %s: %s\n' "${status}" "${error}" "${cause}" >&2
+                # Markdown backticks are intentionally literal.
+                # shellcheck disable=SC2016
+                printf '\n**Failed:** `%s` — `%s`\n\n%s\n' "${status}" "${error}" "${cause}" >>"${GITHUB_STEP_SUMMARY}"
+                exit 1
+                ;;
+              *)
+                printf 'error: unexpected Step Functions status: %s\n' "${status}" >&2
+                exit 1
+                ;;
+            esac
+          done
