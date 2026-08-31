@@ -1,0 +1,20 @@
+# Standalone local runtime for this profile. The image tag is the profile's
+# factorio_version — the engine carries its own version, there is no separate
+# loader — and scripts/validate-profiles.sh keeps the two in agreement.
+services:
+  factorio:
+    image: factoriotools/factorio:2.0.77
+    ports:
+      - "34197:34197/udp"
+      # RCON stays on localhost: an operator surface, never a player one. The
+      # server generates its own password into data/config/rconpw.
+      - "127.0.0.1:27015:27015"
+    volumes:
+      - "./data:/factorio"
+    environment:
+      # First boot generates a map; later boots load the newest save.
+      LOAD_LATEST_SAVE: "true"
+      GENERATE_NEW_SAVE: "true"
+      SAVE_NAME: "spawnpoint"
+    restart: "no"
+    stop_grace_period: 60s

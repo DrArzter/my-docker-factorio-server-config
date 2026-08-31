@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spawnpoint.local/schemas/factorio-profile-v1.json",
+  "title": "Factorio server profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "display_name",
+    "gameplay",
+    "factorio_version",
+    "loader",
+    "compose_file",
+    "mods"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schema_version": { "const": 1 },
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,31}$" },
+    "display_name": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "gameplay": { "enum": ["modded", "vanilla-like"] },
+    "factorio_version": { "type": "string", "pattern": "^[0-9]+(\\.[0-9]+)*$" },
+    "loader": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "version"],
+      "properties": {
+        "type": { "const": "factorio" },
+        "version": { "type": "null" }
+      }
+    },
+    "compose_file": { "const": "compose.yaml" },
+    "mods": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source"],
+      "properties": {
+        "source": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

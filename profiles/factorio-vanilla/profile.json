@@ -1,0 +1,16 @@
+{
+  "$schema": "../schema.json",
+  "schema_version": 1,
+  "id": "factorio-vanilla",
+  "display_name": "Factorio vanilla 2.0",
+  "gameplay": "vanilla-like",
+  "factorio_version": "2.0.77",
+  "loader": {
+    "type": "factorio",
+    "version": null
+  },
+  "compose_file": "compose.yaml",
+  "mods": {
+    "source": null
+  }
+}
