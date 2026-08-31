@@ -61,6 +61,12 @@ some-mod:1.2.3
 Pins are exact versions, not ranges: the mod portal serves one file per version and Factorio clients auto-sync mods
 from the server on join, so a pinned list reproduces the same session for everyone by construction.
 
+**List every required dependency explicitly.** The resolver validates the list as a set against the portal's own
+metadata and refuses the pack when a required dependency is missing, when a pinned version does not satisfy a
+dependency's constraint, when two pinned mods declare that they cannot load together, or when a release was built for
+a different engine series than the profile's `factorio_version`. Optional dependencies are ignored, and `base` means
+the engine rather than a mod to pin.
+
 ## Source versus release
 
 Pins are authoring inputs, not releases. Spawnpoint resolves a profile into an immutable release carrying the
