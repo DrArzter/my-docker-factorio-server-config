@@ -1,6 +1,7 @@
 {
   "$schema": "../schema.json",
   "schema_version": 1,
+  "game": "factorio",
   "id": "factorio-vanilla",
   "display_name": "Factorio vanilla 2.0",
   "gameplay": "vanilla-like",

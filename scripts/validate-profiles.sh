@@ -27,6 +27,7 @@ while IFS= read -r profile; do
     and (.id | test($schema[0].properties.id.pattern))
     and (.display_name | type == "string" and length > 0)
     and (.gameplay == "modded" or .gameplay == "vanilla-like")
+    and .game == "factorio"
     and (.factorio_version | type == "string" and test("^[0-9]+(\\.[0-9]+)*$"))
     and .loader.type == "factorio"
     and .loader.version == null

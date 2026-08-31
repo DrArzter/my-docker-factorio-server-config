@@ -26,6 +26,10 @@ extras/         authoring inputs such as the mod pin list, when applicable
 data/           generated saves and runtime data, ignored by Git
 ```
 
+Every profile declares `"game": "factorio"`. Spawnpoint reads that field to pick the version field, the loader
+contract and the resolver for a profile; a profile with no `game` is treated as Minecraft, which is why this
+repository states it explicitly.
+
 The image tag in `compose.yaml` is the profile's `factorio_version`: the engine carries its own version and there is
 no separate loader, so the version lives in exactly two places and the validator keeps them in agreement.
 
