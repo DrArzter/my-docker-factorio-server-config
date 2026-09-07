@@ -73,3 +73,7 @@ Pins are authoring inputs, not releases. Spawnpoint resolves a profile into an i
 portal's file names and SHA-1 hashes; those hashes remain the deployment truth. Resolution needs a factorio.com
 username and token only to download files at cut time — the server itself never needs an account, because hidden
 servers skip matchmaking authentication. Do not commit downloaded zips or put credentials in profile files.
+
+The GitHub workflows use short-lived AWS credentials and a content-addressed snapshot of the selected commit. Set
+`AWS_RELEASE_ROLE_ARN`, `AWS_BUILD_RELEASE_STATE_MACHINE_ARN`, `AWS_PRESET_CATALOG_STATE_MACHINE_ARN`, and
+`AWS_RELEASE_BUCKET` as repository variables; the pipeline works for both public and private visibility.
