@@ -30,8 +30,9 @@ Every profile declares `"game": "factorio"`. Spawnpoint reads that field to pick
 contract and the resolver for a profile; a profile with no `game` is treated as Minecraft, which is why this
 repository states it explicitly.
 
-The image tag in `compose.yaml` is the profile's `factorio_version`: the engine carries its own version and there is
-no separate loader, so the version lives in exactly two places and the validator keeps them in agreement.
+`runtime.image` is the profile's digest-addressed container reference. The standalone Compose file uses that exact
+reference, and the validator checks that its tag agrees with `factorio_version`. Spawnpoint copies `runtime.image`
+into the immutable release manifest; it does not choose or default the registry, image, tag, or digest.
 
 ## Run locally
 
@@ -75,5 +76,6 @@ username and token only to download files at cut time — the server itself neve
 servers skip matchmaking authentication. Do not commit downloaded zips or put credentials in profile files.
 
 The GitHub workflows use short-lived AWS credentials and a content-addressed snapshot of the selected commit. Set
-`AWS_RELEASE_ROLE_ARN`, `AWS_BUILD_RELEASE_STATE_MACHINE_ARN`, `AWS_PRESET_CATALOG_STATE_MACHINE_ARN`, and
-`AWS_RELEASE_BUCKET` as repository variables; the pipeline works for both public and private visibility.
+`AWS_REGION`, `CONFIG_REPOSITORY_URL`, `AWS_RELEASE_ROLE_ARN`, `AWS_BUILD_RELEASE_STATE_MACHINE_ARN`,
+`AWS_PRESET_CATALOG_STATE_MACHINE_ARN`, and `AWS_RELEASE_BUCKET` as repository variables; the pipeline works for both
+public and private visibility.

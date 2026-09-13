@@ -11,6 +11,7 @@
     "display_name",
     "gameplay",
     "factorio_version",
+    "runtime",
     "loader",
     "compose_file",
     "mods"
@@ -23,6 +24,17 @@
     "display_name": { "type": "string", "minLength": 1, "maxLength": 80 },
     "gameplay": { "enum": ["modded", "vanilla-like"] },
     "factorio_version": { "type": "string", "pattern": "^[0-9]+(\\.[0-9]+)*$" },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["image"],
+      "properties": {
+        "image": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._/-]+(:[A-Za-z0-9._-]+)?@sha256:[0-9a-f]{64}$"
+        }
+      }
+    },
     "loader": {
       "type": "object",
       "additionalProperties": false,
