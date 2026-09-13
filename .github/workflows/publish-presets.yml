@@ -25,12 +25,12 @@ jobs:
     timeout-minutes: 120
 
     env:
-      AWS_REGION: eu-central-1
+      AWS_REGION: ${{ vars.AWS_REGION }}
       RELEASE_ROLE_ARN: ${{ vars.AWS_RELEASE_ROLE_ARN }}
       STATE_MACHINE_ARN: ${{ vars.AWS_PRESET_CATALOG_STATE_MACHINE_ARN }}
       BUILD_STATE_MACHINE_ARN: ${{ vars.AWS_BUILD_RELEASE_STATE_MACHINE_ARN }}
       RELEASE_BUCKET: ${{ vars.AWS_RELEASE_BUCKET }}
-      CONFIG_REPOSITORY_URL: https://github.com/DrArzter/my-docker-factorio-server-config.git
+      CONFIG_REPOSITORY_URL: ${{ vars.CONFIG_REPOSITORY_URL }}
 
     steps:
       - name: Check out the exact configuration commit
@@ -46,6 +46,8 @@ jobs:
           [[ -n "${BUILD_STATE_MACHINE_ARN}" ]] || { printf 'error: AWS_BUILD_RELEASE_STATE_MACHINE_ARN is missing\n' >&2; exit 1; }
           [[ -n "${RELEASE_ROLE_ARN}" ]] || { printf 'error: AWS_RELEASE_ROLE_ARN is missing\n' >&2; exit 1; }
           [[ -n "${RELEASE_BUCKET}" ]] || { printf 'error: AWS_RELEASE_BUCKET is missing\n' >&2; exit 1; }
+          [[ -n "${AWS_REGION}" ]] || { printf 'error: AWS_REGION is missing\n' >&2; exit 1; }
+          [[ -n "${CONFIG_REPOSITORY_URL}" ]] || { printf 'error: CONFIG_REPOSITORY_URL is missing\n' >&2; exit 1; }
 
       - name: Get short-lived AWS credentials through OIDC
         uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3

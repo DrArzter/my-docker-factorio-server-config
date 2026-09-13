@@ -6,6 +6,9 @@
   "display_name": "Factorio vanilla 2.0",
   "gameplay": "vanilla-like",
   "factorio_version": "2.0.77",
+  "runtime": {
+    "image": "docker.io/factoriotools/factorio:2.0.77@sha256:c6092b912bd142994170a8c430472be4259b57fca4eb3ebaa421fe46885fd5a4"
+  },
   "loader": {
     "type": "factorio",
     "version": null

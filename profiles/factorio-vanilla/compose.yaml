@@ -1,9 +1,9 @@
-# Standalone local runtime for this profile. The image tag is the profile's
-# factorio_version — the engine carries its own version, there is no separate
-# loader — and scripts/validate-profiles.sh keeps the two in agreement.
+# Standalone local runtime for this profile. This is the same digest-addressed
+# image exported into Spawnpoint releases; scripts/validate-profiles.sh keeps
+# Compose and profile.json in agreement.
 services:
   factorio:
-    image: factoriotools/factorio:2.0.77
+    image: docker.io/factoriotools/factorio:2.0.77@sha256:c6092b912bd142994170a8c430472be4259b57fca4eb3ebaa421fe46885fd5a4
     ports:
       - "34197:34197/udp"
       # RCON stays on localhost: an operator surface, never a player one. The

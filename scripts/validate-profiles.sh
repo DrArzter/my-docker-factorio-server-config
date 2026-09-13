@@ -29,6 +29,7 @@ while IFS= read -r profile; do
     and (.gameplay == "modded" or .gameplay == "vanilla-like")
     and .game == "factorio"
     and (.factorio_version | type == "string" and test("^[0-9]+(\\.[0-9]+)*$"))
+    and (.runtime.image | type == "string" and test("^[A-Za-z0-9._/-]+(:[A-Za-z0-9._-]+)?@sha256:[0-9a-f]{64}$"))
     and .loader.type == "factorio"
     and .loader.version == null
     and .compose_file == "compose.yaml"
@@ -72,16 +73,19 @@ while IFS= read -r profile; do
       config --format json
   )"
   factorio_version="$(jq -r '.factorio_version' "${profile}")"
+  runtime_image="$(jq -r '.runtime.image' "${profile}")"
   # profile_directory is already absolute; plain concatenation avoids GNU
   # realpath flags the macOS userland does not have.
   expected_data_directory="${profile_directory}/data"
 
-  # The image tag IS the runtime version — the engine has no separate loader —
-  # so the profile's factorio_version and the Compose file must agree.
+  # The profile owns both the engine metadata and its immutable container.
+  # Spawnpoint receives the same exact reference through the release manifest.
   jq -e \
     --arg factorio_version "${factorio_version}" \
+    --arg runtime_image "${runtime_image}" \
     --arg expected_data_directory "${expected_data_directory}" '
-      (.services.factorio.image | endswith(":" + $factorio_version))
+      ($runtime_image | test(":" + $factorio_version + "@sha256:[0-9a-f]{64}$"))
+      and .services.factorio.image == $runtime_image
       and any(.services.factorio.volumes[]; .target == "/factorio" and .source == $expected_data_directory)
       and any(.services.factorio.ports[]; .target == 34197 and .protocol == "udp")
       and any(.services.factorio.ports[]; .target == 27015 and .host_ip == "127.0.0.1")

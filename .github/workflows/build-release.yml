@@ -30,13 +30,13 @@ jobs:
     timeout-minutes: 45
 
     env:
-      AWS_REGION: eu-central-1
+      AWS_REGION: ${{ vars.AWS_REGION }}
       PROFILE_ID: ${{ inputs.profile }}
       RELEASE: ${{ inputs.release }}
       RELEASE_ROLE_ARN: ${{ vars.AWS_RELEASE_ROLE_ARN }}
       STATE_MACHINE_ARN: ${{ vars.AWS_BUILD_RELEASE_STATE_MACHINE_ARN }}
       RELEASE_BUCKET: ${{ vars.AWS_RELEASE_BUCKET }}
-      CONFIG_REPOSITORY_URL: https://github.com/DrArzter/my-docker-factorio-server-config.git
+      CONFIG_REPOSITORY_URL: ${{ vars.CONFIG_REPOSITORY_URL }}
 
     steps:
       - name: Check out the exact configuration commit
@@ -77,6 +77,14 @@ jobs:
           }
           [[ -n "${RELEASE_BUCKET}" ]] || {
             printf 'error: repository variable AWS_RELEASE_BUCKET is missing\n' >&2
+            exit 1
+          }
+          [[ -n "${AWS_REGION}" ]] || {
+            printf 'error: repository variable AWS_REGION is missing\n' >&2
+            exit 1
+          }
+          [[ -n "${CONFIG_REPOSITORY_URL}" ]] || {
+            printf 'error: repository variable CONFIG_REPOSITORY_URL is missing\n' >&2
             exit 1
           }
 
